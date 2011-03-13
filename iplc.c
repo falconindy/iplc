@@ -56,6 +56,7 @@ struct request_t {
   struct ifaddrmsg im;
 };
 
+int columns[__NCOLUMNS];
 int ncolumns;
 
 static int create_request(struct request_t *req, int inetproto) {
@@ -128,7 +129,7 @@ static struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
           snprintf(iface->bcastaddr, 64, NIP4_FMT, NIP4(*inp));
         } else if (proto == AF_INET6) {
           in6p = (struct in6_addr *)RTA_DATA(rtatp);
-          snprintf(iface->bcastaddr, 64, NIP6_FMT, NIP4(*in6p));
+          snprintf(iface->bcastaddr, 64, NIP6_FMT, NIP6(*in6p));
         }
         break;
       case IFA_ANYCAST:
@@ -137,7 +138,7 @@ static struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
           snprintf(iface->anycastaddr, 64, NIP4_FMT, NIP4(*inp));
         } else if (proto == AF_INET6) {
           in6p = (struct in6_addr *)RTA_DATA(rtatp);
-          snprintf(iface->anycastaddr, 64, NIP6_FMT, NIP4(*in6p));
+          snprintf(iface->anycastaddr, 64, NIP6_FMT, NIP6(*in6p));
         }
         break;
     }
@@ -162,6 +163,7 @@ int main(void) {
   int rtnsock;
   char buf[16384];
 
+  ncolumns = 0;
 
   /* netlink magic happens below here */
   rtnsock = create_request(&req, AF_INET);
