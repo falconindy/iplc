@@ -62,7 +62,7 @@ int ncolumns;
 static int create_request(struct request_t *req, int inetproto) {
   int sock;
 
-  sock = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
+  sock = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
   if (sock < 0) {
     perror("socket");
     return(-1);
@@ -76,9 +76,11 @@ static int create_request(struct request_t *req, int inetproto) {
    */
 
   memset(req, 0, sizeof *req);
+
   req->nh.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
-  req->nh.nlmsg_flags = NLM_F_REQUEST | NLM_F_ROOT;
   req->nh.nlmsg_type = RTM_GETADDR;
+  req->nh.nlmsg_flags = NLM_F_REQUEST | NLM_F_ROOT;
+
   req->im.ifa_family = inetproto;
 
   return sock;
@@ -95,8 +97,8 @@ static struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
 
   iface = calloc(1, sizeof *iface);
 
-  rtmp = (struct ifaddrmsg *)NLMSG_DATA(msg);
-  rtatp = (struct rtattr *)IFA_RTA(rtmp);
+  rtmp = (struct ifaddrmsg*)NLMSG_DATA(msg);
+  rtatp = (struct rtattr*)IFA_RTA(rtmp);
 
   rtattrlen = IFA_PAYLOAD(msg);
   while (RTA_OK(rtatp, rtattrlen)) {
@@ -149,9 +151,35 @@ static struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
   return NULL;
 }
 
-void print_interface(struct interface_t *iface) {
-  printf("%s: %s\n", iface->label, iface->ifaddr);
-  return;
+static void print_headers(void) {
+  int i;
+
+  for (i = 0; i < ncolumns; i++) {
+    printf("%-*s", infos[columns[i]].whint, infos[columns[i]].name);
+  }
+  putchar('\n');
+}
+
+static void print_interface(struct interface_t *iface) {
+  int i;
+
+  for (i = 0; i < ncolumns; i++) {
+    switch (columns[i]) {
+      case COL_LABEL:
+        printf("%-*s", infos[COL_LABEL].whint, iface->label);
+        break;
+      case COL_IFADDR:
+        printf("%-*s", infos[COL_IFADDR].whint, iface->ifaddr);
+        break;
+      case COL_BCASTADDR:
+        printf("%-*s", infos[COL_BCASTADDR].whint, iface->bcastaddr);
+        break;
+      case COL_ANYCASTADDR:
+        printf("%-*s", infos[COL_ANYCASTADDR].whint, iface->anycastaddr);
+        break;
+    }
+  }
+  putchar('\n');
 }
 
 int main(void) {
@@ -164,6 +192,10 @@ int main(void) {
   char buf[16384];
 
   ncolumns = 0;
+  columns[ncolumns++] = COL_LABEL;
+  columns[ncolumns++] = COL_IFADDR;
+  columns[ncolumns++] = COL_BCASTADDR;
+  columns[ncolumns++] = COL_ANYCASTADDR;
 
   /* netlink magic happens below here */
   rtnsock = create_request(&req, AF_INET);
@@ -186,6 +218,8 @@ int main(void) {
     fprintf(stderr, "unexpected EOF\n");
     return 1;
   }
+
+  print_headers();
 
   /* Typically the message is stored in buf, so we need to parse the message to
    * get the required data for our display. */
