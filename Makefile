@@ -1,7 +1,7 @@
 # iplc - parseable network interface output
 
 CC ?= cc
-CFLAGS += -std=c99 -Wall -Wextra -pedantic
+CFLAGS += -std=c99 -g -Wall -Wextra -pedantic
 
 SRC = iplc.c
 OBJ = ${SRC:.c=.o}
