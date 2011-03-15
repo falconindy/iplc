@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <getopt.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +20,7 @@
                    ntohs((addr).s6_addr[4]), ntohs((addr).s6_addr[5]), \
                    ntohs((addr).s6_addr[6]), ntohs((addr).s6_addr[7])
 
-/* column IDs */
+/* declares */
 enum {
   COL_LABEL,
   COL_IFADDR,
@@ -59,7 +60,17 @@ struct request_t {
 int columns[__NCOLUMNS];
 int ncolumns;
 
-static int create_request(struct request_t *req, int inetproto) {
+/* options */
+int optnoheaders = 0;
+
+/* protos */
+static int create_request(struct request_t*, int);
+static int parse_options(int, char*[]);
+static void print_headers(void);
+static void print_interface(struct interface_t*);
+static struct interface_t *read_response(struct nlmsghdr*, int);
+
+int create_request(struct request_t *req, int inetproto) {
   int sock;
 
   sock = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
@@ -86,7 +97,60 @@ static int create_request(struct request_t *req, int inetproto) {
   return sock;
 }
 
-static struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
+int parse_options(int argc, char *argv[]) {
+  int opt;
+
+  while ((opt = getopt(argc, argv, "n")) != -1) {
+    switch (opt) {
+      case 'n':
+        optnoheaders = 1;
+        break;
+      case '?':
+        return 1;
+      default:
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+void print_headers() {
+  int i;
+
+  if (optnoheaders) {
+    return;
+  }
+
+  for (i = 0; i < ncolumns; i++) {
+    printf("%-*s", infos[columns[i]].whint, infos[columns[i]].name);
+  }
+  putchar('\n');
+}
+
+void print_interface(struct interface_t *iface) {
+  int i;
+
+  for (i = 0; i < ncolumns; i++) {
+    switch (columns[i]) {
+      case COL_LABEL:
+        printf("%-*s", infos[COL_LABEL].whint, iface->label);
+        break;
+      case COL_IFADDR:
+        printf("%-*s", infos[COL_IFADDR].whint, iface->ifaddr);
+        break;
+      case COL_BCASTADDR:
+        printf("%-*s", infos[COL_BCASTADDR].whint, iface->bcastaddr);
+        break;
+      case COL_ANYCASTADDR:
+        printf("%-*s", infos[COL_ANYCASTADDR].whint, iface->anycastaddr);
+        break;
+    }
+  }
+  putchar('\n');
+}
+
+struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
   struct ifaddrmsg *rtmp;
   struct interface_t *iface;
   struct rtattr *rtatp;
@@ -151,38 +215,7 @@ static struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
   return NULL;
 }
 
-static void print_headers(void) {
-  int i;
-
-  for (i = 0; i < ncolumns; i++) {
-    printf("%-*s", infos[columns[i]].whint, infos[columns[i]].name);
-  }
-  putchar('\n');
-}
-
-static void print_interface(struct interface_t *iface) {
-  int i;
-
-  for (i = 0; i < ncolumns; i++) {
-    switch (columns[i]) {
-      case COL_LABEL:
-        printf("%-*s", infos[COL_LABEL].whint, iface->label);
-        break;
-      case COL_IFADDR:
-        printf("%-*s", infos[COL_IFADDR].whint, iface->ifaddr);
-        break;
-      case COL_BCASTADDR:
-        printf("%-*s", infos[COL_BCASTADDR].whint, iface->bcastaddr);
-        break;
-      case COL_ANYCASTADDR:
-        printf("%-*s", infos[COL_ANYCASTADDR].whint, iface->anycastaddr);
-        break;
-    }
-  }
-  putchar('\n');
-}
-
-int main(void) {
+int main(int argc, char *argv[]) {
   struct nlmsghdr *nlmh;
   struct request_t req;
   struct interface_t *iface;
@@ -196,6 +229,10 @@ int main(void) {
   columns[ncolumns++] = COL_IFADDR;
   columns[ncolumns++] = COL_BCASTADDR;
   columns[ncolumns++] = COL_ANYCASTADDR;
+
+  if (parse_options(argc, argv) != 0) {
+    return 1;
+  }
 
   /* netlink magic happens below here */
   rtnsock = create_request(&req, AF_INET);
