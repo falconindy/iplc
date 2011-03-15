@@ -232,7 +232,7 @@ int main(void) {
       return 1;
     }
 
-    if (!NLMSG_OK(nlmh, msglen)) {
+    if (!NLMSG_OK(nlmh, (size_t)msglen)) {
       fprintf(stderr, "error: NLMSG truncated\n");
       return 1;
     }
