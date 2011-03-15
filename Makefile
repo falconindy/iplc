@@ -11,11 +11,14 @@ all: iplc
 .c.o:
 	${CC} -c ${CFLAGS} $<
 
-ipl: ${OBJ}
+iplc: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
-install: ipl ipl.1
+install: iplc
 	install -D -m755 iplc ${DESTDIR}${PREFIX}/bin/iplc
+
+uninstall:
+	rm -f ${DESTDIR}${PREFIX}/bin/iplc
 
 strip: iplc
 	strip --strip-all iplc
