@@ -20,6 +20,8 @@
                    ntohs((addr).s6_addr[4]), ntohs((addr).s6_addr[5]), \
                    ntohs((addr).s6_addr[6]), ntohs((addr).s6_addr[7])
 
+#define FIELDLEN   64
+
 /* declares */
 enum {
   COL_LABEL,
@@ -45,11 +47,11 @@ struct colinfo_t infos[__NCOLUMNS] = {
 };
 
 struct interface_t {
-  char label[64];
-  char ifaddr[64];
-  char localaddr[64];
-  char bcastaddr[64];
-  char anycastaddr[64];
+  char label[FIELDLEN];
+  char ifaddr[FIELDLEN];
+  char localaddr[FIELDLEN];
+  char bcastaddr[FIELDLEN];
+  char anycastaddr[FIELDLEN];
 };
 
 struct request_t {
@@ -169,42 +171,42 @@ struct interface_t *read_response(struct nlmsghdr *msg, int proto) {
     /* these attribute types can be found in rtnetlink(7) */
     switch (rtatp->rta_type) {
       case IFA_LABEL:
-        snprintf(iface->label, 64, "%s", (const char*)RTA_DATA(rtatp));
+        snprintf(iface->label, FIELDLEN, "%s", (const char*)RTA_DATA(rtatp));
         break;
       case IFA_ADDRESS:
         if (proto == AF_INET) {
           inp = (struct in_addr *)RTA_DATA(rtatp);
-          snprintf(iface->ifaddr, 64, NIP4_FMT, NIP4(*inp));
+          snprintf(iface->ifaddr, FIELDLEN, NIP4_FMT, NIP4(*inp));
         } else if (proto == AF_INET6) {
           in6p = (struct in6_addr *)RTA_DATA(rtatp);
-          snprintf(iface->ifaddr, 64, NIP6_FMT, NIP6(*in6p));
+          snprintf(iface->ifaddr, FIELDLEN, NIP6_FMT, NIP6(*in6p));
         }
         break;
       case IFA_LOCAL:
         if (proto == AF_INET) {
           inp = (struct in_addr *)RTA_DATA(rtatp);
-          snprintf(iface->localaddr, 64, NIP4_FMT, NIP4(*inp));
+          snprintf(iface->localaddr, FIELDLEN, NIP4_FMT, NIP4(*inp));
         } else if (proto == AF_INET6) {
           in6p = (struct in6_addr *)RTA_DATA(rtatp);
-          snprintf(iface->localaddr, 64, NIP6_FMT, NIP6(*in6p));
+          snprintf(iface->localaddr, FIELDLEN, NIP6_FMT, NIP6(*in6p));
         }
         break;
       case IFA_BROADCAST:
         if (proto == AF_INET) {
           inp = (struct in_addr *)RTA_DATA(rtatp);
-          snprintf(iface->bcastaddr, 64, NIP4_FMT, NIP4(*inp));
+          snprintf(iface->bcastaddr, FIELDLEN, NIP4_FMT, NIP4(*inp));
         } else if (proto == AF_INET6) {
           in6p = (struct in6_addr *)RTA_DATA(rtatp);
-          snprintf(iface->bcastaddr, 64, NIP6_FMT, NIP6(*in6p));
+          snprintf(iface->bcastaddr, FIELDLEN, NIP6_FMT, NIP6(*in6p));
         }
         break;
       case IFA_ANYCAST:
         if (proto == AF_INET) {
           inp = (struct in_addr *)RTA_DATA(rtatp);
-          snprintf(iface->anycastaddr, 64, NIP4_FMT, NIP4(*inp));
+          snprintf(iface->anycastaddr, FIELDLEN, NIP4_FMT, NIP4(*inp));
         } else if (proto == AF_INET6) {
           in6p = (struct in6_addr *)RTA_DATA(rtatp);
-          snprintf(iface->anycastaddr, 64, NIP6_FMT, NIP6(*in6p));
+          snprintf(iface->anycastaddr, FIELDLEN, NIP6_FMT, NIP6(*in6p));
         }
         break;
     }
