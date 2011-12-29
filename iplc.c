@@ -30,7 +30,7 @@ enum {
   COL_BCASTADDR,
   COL_ANYCASTADDR,
 
-  __NCOLUMNS
+  COL_MAXCOLUMNS
 };
 
 struct colinfo_t {
@@ -38,11 +38,11 @@ struct colinfo_t {
   int whint;
 };
 
-struct colinfo_t infos[__NCOLUMNS] = {
-  [COL_LABEL] = { "LABEL", 20 },
-  [COL_IFADDR] = { "IFADDR", 20 },
-  [COL_LOCALADDR] = { "LOCALADDR", 20 },
-  [COL_BCASTADDR] = { "BCASTADDR", 20 },
+struct colinfo_t infos[COL_MAXCOLUMNS] = {
+  [COL_LABEL]       = { "LABEL",       20 },
+  [COL_IFADDR]      = { "IFADDR",      20 },
+  [COL_LOCALADDR]   = { "LOCALADDR",   20 },
+  [COL_BCASTADDR]   = { "BCASTADDR",   20 },
   [COL_ANYCASTADDR] = { "ANYCASTADDR", 20 }
 };
 
@@ -59,11 +59,12 @@ struct request_t {
   struct ifaddrmsg im;
 };
 
-int columns[__NCOLUMNS];
+int columns[COL_MAXCOLUMNS];
 int ncolumns;
 
 /* options */
-int optnoheaders = 0;
+static int optnoheaders;
+static const char *optiface;
 
 /* protos */
 static int create_request(struct request_t*, int);
@@ -102,8 +103,12 @@ int create_request(struct request_t *req, int inetproto) {
 int parse_options(int argc, char *argv[]) {
   int opt;
 
-  while ((opt = getopt(argc, argv, "n")) != -1) {
+  while ((opt = getopt(argc, argv, "i:n")) != -1) {
     switch (opt) {
+      case 'i':
+        optiface = optarg;
+        optnoheaders = 1;
+        break;
       case 'n':
         optnoheaders = 1;
         break;
@@ -278,7 +283,9 @@ int main(int argc, char *argv[]) {
 
     iface = read_response(nlmh, AF_INET);
     if (iface) {
-      print_interface(iface);
+      if (optiface && strcmp(optiface, iface->label) == 0) {
+        print_interface(iface);
+      }
 
       /* move onto the next response */
       msglen -= NLMSG_ALIGN(len);
